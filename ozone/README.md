@@ -1,104 +1,132 @@
-<!---
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
+<div align="center">
+  <a href="https://ozone.apache.org">
+    <img src="https://www.apache.org/logos/res/ozone/default.png" alt="Apache Ozone Logo" />
+  </a>
+</div>
 
-   http://www.apache.org/licenses/LICENSE-2.0
+[![License](https://img.shields.io/:license-Apache%202-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.txt)
+[![Docker Pulls](https://img.shields.io/docker/pulls/apache/ozone.svg)](https://hub.docker.com/r/apache/ozone)
+[![Docker Stars](https://img.shields.io/docker/stars/apache/ozone.svg)](https://hub.docker.com/r/apache/ozone)
+[![Contributors](https://img.shields.io/github/contributors/apache/ozone)](https://github.com/apache/ozone/graphs/contributors)
+[![Commit Activity](https://img.shields.io/github/commit-activity/m/apache/ozone)](https://github.com/apache/ozone/commits/master)
+[![OSSRank](https://shields.io/endpoint?url=https://ossrank.com/shield/3018)](https://ossrank.com/p/3018-apache-ozone)
 
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License. See accompanying LICENSE file.
--->
+Apache Ozone
 
-# Compose file with optional monitoring and profiling configs
+Ozone is a scalable, redundant, and distributed object store for Hadoop and Cloud-native environments. Apart from scaling to billions of objects of varying sizes, Ozone can function effectively in containerized environments such as Kubernetes and YARN.
 
-This directory contains a docker-compose definition for an Ozone cluster with all components (including S3 Gateway and Recon).
 
-There are two optional add-ons:
+ * MULTI-PROTOCOL SUPPORT: Ozone supports different protocols like S3 and Hadoop File System APIs.
+ * SCALABLE: Ozone is designed to scale to tens of billions of files and blocks and, in the future, even more.
+ * CONSISTENT: Ozone is a strongly consistent object store. This consistency is achieved by using protocols like RAFT.
+ * CLOUD-NATIVE: Ozone is designed to work well in containerized environments like YARN and Kubernetes.
+ * SECURE: Ozone integrates with Kerberos infrastructure for authentication, supports native ACLs and integrates with Ranger for access control and supports TDE and on-wire encryption.
+ * HIGHLY AVAILABLE: Ozone is a fully replicated system that is designed to survive multiple failures.
 
- * monitoring: adds Grafana, Jaeger and Prometheus services, and configures Ozone to work with them
- * profiling: allows sampling Ozone CPU/memory using [async-profiler](https://github.com/jvm-profiling-tools/async-profiler)
+## Documentation
 
-## How to start
+The latest documentation is generated together with the releases and hosted on the apache site.
 
-TL;DR:
+Please check [the documentation page](https://ozone.apache.org/docs/) for more information.
 
-1. single datanode:
-   ```
-   ./run.sh -d
-   ```
-2. multiple datanodes for replication:
-   ```
-   OZONE_DATANODES=3 ./run.sh -d
-   # or
-   OZONE_DATANODES=5 ./run.sh -d
-   ```
+## Contact
 
-### Basics
+Ozone is a top level project under the [Apache Software Foundation](https://apache.org)
 
-The cluster can be started with regular `docker-compose up` command.  Use `-d` to start the cluster in the background.
+ * Ozone [web page](https://ozone.apache.org)
+ * Mailing lists
+     * For any questions use: [dev@ozone.apache.org](https://lists.apache.org/list.html?dev@ozone.apache.org)
+ * Chat: There are a few ways to interact with the community
+     * You can find the #ozone channel on the official ASF Slack. Invite link is [here](http://s.apache.org/slack-invite).
+     * You can use [GitHub Discussions](https://github.com/apache/ozone/discussions) to post questions or follow community syncs. 
+ * There are Open [Weekly calls](https://cwiki.apache.org/confluence/display/OZONE/Ozone+Community+Calls) where you can ask anything about Ozone.
+    * Past meeting notes are also available from the wiki.
+ * Reporting security issues: Please consult with [SECURITY.md](./SECURITY.md) about reporting security vulnerabilities and issues.
 
-You can change the number of datanodes to start using the `--scale` option.  Eg. to start 3 datanodes: `docker-compose up -d --scale datanode=3`.
+## Download
 
-The cluster's replication factor (1 or 3) can be controlled by setting the `OZONE_REPLICATION_FACTOR` environment variable.  It defaults to 1 to match the number of datanodes started by default, without the `--scale` option.
+Latest release artifacts (source release and binary packages) are [available](https://ozone.apache.org/downloads/) from the Ozone web page.
 
-For convenience the `run.sh` script can be used to start multiple datanodes (by setting the `OZONE_DATANODES` variable), while making sure the replication factor and the number of datanodes are compatible.  It also passes any additional arguments provided on the command-line (eg. `-d`) to `docker-compose`.
+## Quick start
 
-### Add-ons
+### Run Ozone with Docker Compose
 
-Monitoring and/or performance add-ons can be enabled via docker-compose's ability to use multiple compose files (by using the [`-f` option repeatedly](https://docs.docker.com/compose/reference/overview/#specifying-multiple-compose-files), or more easily by defining the [`COMPOSE_FILE` environment variable](https://docs.docker.com/compose/reference/envvars/#compose_file)):
+The easiest way to start a cluster with docker is by using Docker Compose:
 
-```
-# no COMPOSE_FILE var                                                  # => only Ozone
-export COMPOSE_FILE=docker-compose.yaml:monitoring.yaml                # => add monitoring
-export COMPOSE_FILE=docker-compose.yaml:profiling.yaml                 # => add profiling
-export COMPOSE_FILE=docker-compose.yaml:monitoring.yaml:profiling.yaml # => add both
-```
-
-Once the variable is defined, Ozone cluster with add-ons can be started/scaled/stopped etc. using the same `docker-compose` commands as for the base cluster.
-
-### Load generator
-
-Ozone comes with a load generator called Freon.
-
-You can enter one of the containers (eg. SCM) and start a Freon test:
-
-```
-docker-compose exec scm bash
-ozone freon ockg -n1000
+- Obtain Ozone’s sample Docker Compose configuration:
+```bash
+curl -O https://raw.githubusercontent.com/apache/ozone-docker/refs/heads/latest/docker-compose.yaml
 ```
 
-You can also start two flavors of Freon as separate services, which allows scaling them up.  Once all the datanodes are started, start Freon by adding its definition to `COMPOSE_FILE` and re-running the `docker-compose up` or `run.sh` command:
-
-```
-export COMPOSE_FILE="${COMPOSE_FILE}:freon-ockg.yaml"
-
-docker-compose up -d --no-recreate --scale datanode=3
-# OR
-./run.sh -d
+- Start the cluster
+```bash
+docker compose up -d --scale datanode=3
 ```
 
-## How to use
+- Note: By default, the cluster will be started with replication factor set to 1. It can be changed by setting the environment variable `OZONE_REPLICATION_FACTOR` to the desired value.
 
-You can check the ozone web ui:
+And you can use AWS S3 cli:
 
-OzoneManager: http://localhost:9874
-SCM: http://localhost:9876
+- First, let’s configure AWS access key and secret key. Because the cluster is not secured, you can use any arbitrary access key and secret key. For example:
+```bash
+export AWS_ACCESS_KEY_ID=testuser/scm@EXAMPLE.COM
+export AWS_SECRET_ACCESS_KEY=c261b6ecabf7d37d5f9ded654b1c724adac9bd9f13e247a235e567e8296d2999
+```
 
-### Monitoring
+- Then we can create a bucket and upload a file to it:
+```
+aws s3api --endpoint http://localhost:9878/ create-bucket --bucket=wordcount
+# create a temporary file to upload to Ozone via S3 support 
+ls -1 > /tmp/testfile
+aws s3 --endpoint http://localhost:9878 cp --storage-class REDUCED_REDUNDANCY  /tmp/testfile  s3://wordcount/testfile
+```
 
- * Prometheus: follows a pull based approach where metrics are published on an HTTP endpoint.  Metrics can be checked on [Prometheus' web UI](http://localhost:9090/)
- * Grafana: comes with three [dashboards](http://localhost:3000) for Ozone
-   * Ozone - Object Metrics
-   * Ozone - RPC Metrics
-   * Ozone - Overall Metrics
- * Jaeger: collects distributed tracing information from Ozone, can be queried on the [Jaeger web UI](http://localhost:16686)
+### Run Ozone from released artifact
 
-### Profiling
+If you need a more realistic cluster, you can [download](https://ozone.apache.org/downloads/) the latest (binary) release package, and start a cluster with the help of docker-compose:
 
+After you untar the binary:
+
+```
+cd compose/ozone
+docker-compose up -d --scale datanode=3
+```
+
+The `compose` folder contains different sets of configured clusters (secure, HA, mapreduce example), you can check the various subfolders for more exampl
 Start by hitting the `/prof` endpoint on the service to be profiled, eg. http://localhost:9876/prof for SCM.  [Detailed instructions](https://cwiki.apache.org/confluence/display/HADOOP/Java+Profiling+of+Ozone) can be found in the Hadoop wiki.
 
 
-This branch is used for Antigravity integration testing.
+This branch is used for Antigravity integration t
+### Run on Kubernetes
+
+Ozone is a first class citizen of the Cloud-Native environments. The binary package contains multiple sets of K8s resource files to show how it can be deployed.
+
+## Build from source
+
+Ozone can be built with [Apache Maven](https://maven.apache.org):
+
+```
+mvn clean install -DskipTests
+```
+
+And can be started with the help of Docker:
+
+```
+cd hadoop-ozone/dist/target/ozone-*/compose/ozone
+docker-compose up -d --scale datanode=3
+```
+For more information, you can check the [Contribution guideline](./CONTRIBUTING.md)
+
+## Contribute
+
+All contributions are welcome.
+
+ 1. Please open a [Jira](https://issues.apache.org/jira/projects/HDDS/issues) issue
+ 2. And create a pull request
+
+For more information, you can check the [Contribution guideline](./CONTRIBUTING.md)
+
+## License
+
+The Apache Ozone project is licensed under the Apache 2.0 License. See the [LICENSE](./LICENSE.txt) file for details.
+ 838d37b (Working Apache Ozone docker-compose setup for integration)

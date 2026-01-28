@@ -1,0 +1,45 @@
+services:
+  scm:
+    image: apache/ozone-runner:20250625-2-jdk21
+    container_name: ozone-scm
+    command: ["bash","-c","/opt/hadoop/bin/ozone scm"]
+    volumes:
+      - ./ozone:/opt/hadoop
+      - ./docker-config:/etc/hadoop
+      - ozone_metadata:/data/metadata
+    ports:
+      - "9860:9860"
+      - "9876:9876"
+
+  om:
+    image: apache/ozone-runner:20250625-2-jdk21
+    container_name: ozone-om
+    command: ["bash","-c","/opt/hadoop/bin/ozone om"]
+    volumes:
+      - ./ozone:/opt/hadoop
+      - ./docker-config:/etc/hadoop
+      - ozone_metadata:/data/metadata
+    ports:
+      - "9862:9862"
+      - "9874:9874"
+    depends_on:
+      - scm
+
+  datanode:
+    image: apache/ozone-runner:20250625-2-jdk21
+    container_name: ozone-datanode
+    command: ["bash","-c","/opt/hadoop/bin/ozone datanode"]
+    volumes:
+      - ./ozone:/opt/hadoop
+      - ./docker-config:/etc/hadoop
+      - ozone_datanode:/data/datanode
+    ports:
+      - "9882:9882"
+      - "19864:19864"
+    depends_on:
+      - scm
+
+volumes:
+  ozone_metadata:
+  ozone_datanode:
+
